@@ -1,0 +1,24 @@
+<!--
+  ThreatLens Custom Detection
+  Rule:        100102
+  Purpose:     Detect writes to Registry Run / RunOnce keys (autostart persistence)
+  Data source: Sysmon Event ID 13 (Registry Value Set) via Wazuh Agent
+  MITRE:       T1547.001 - Registry Run Keys / Startup Folder (Persistence)
+
+  NOTE: This rule references the "sysmon_event13" base rule group shipped with the
+  Wazuh Sysmon ruleset. Confirm your local Sysmon rule group ID before deploying
+  and adjust <if_sid> accordingly.
+-->
+<group name="threatlens,registry_persistence,">
+
+  <rule id="100102" level="15">
+    <if_group>sysmon_event13</if_group>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)\\CurrentVersion\\Run(Once)?\\</field>
+    <description>CRITICAL: Registry Run Key Persistence Detected</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+    <group>persistence,registry_run_key,</group>
+  </rule>
+
+</group>

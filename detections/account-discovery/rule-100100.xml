@@ -1,0 +1,26 @@
+<!--
+  ThreatLens Custom Detection
+  Rule:        100100
+  Purpose:     Detect net.exe / net1.exe account discovery activity (e.g. "net user")
+  Data source: Sysmon Event ID 1 (Process Creation) via Wazuh Agent
+  MITRE:       T1087 - Account Discovery (Discovery)
+
+  NOTE: This rule references the "sysmon_event1" base rule group shipped with the
+  Wazuh Sysmon ruleset. Confirm your local Sysmon rule group ID before deploying
+  (commonly 61603 in recent Wazuh Sysmon rulesets) and adjust <if_sid> accordingly.
+-->
+<group name="threatlens,account_discovery,">
+
+  <rule id="100100" level="15">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\net1\.exe$</field>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\net\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)\buser\b</field>
+    <description>Custom Detection - net.exe Discovery</description>
+    <mitre>
+      <id>T1087</id>
+    </mitre>
+    <group>discovery,account_discovery,</group>
+  </rule>
+
+</group>
