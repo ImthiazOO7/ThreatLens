@@ -14,10 +14,16 @@ So the first phase of ThreatLens was standing up and validating the monitoring p
 
 ## Components
 
+### Kali Linux — Attacker / Security Tester Machine
+- Used as the controlled attacker/test workstation, connecting over the network to both the Ubuntu server and the Windows 11 endpoint
+- Source of two categories of controlled activity: (1) SSH authentication attempts against the Ubuntu server, and (2) endpoint-side test activity investigated on the Windows 11 endpoint (encoded PowerShell execution, `net.exe` account discovery, registry Run key modification)
+- Not part of the monitored/defended environment itself — Kali does **not** run a Wazuh Agent and generates no defensive telemetry of its own. It only appears in telemetry indirectly, as the *source* of activity observed by monitored hosts (e.g. as `srcip` in the Ubuntu server's SSH logs)
+
 ### Ubuntu Server — Wazuh backend
 - Wazuh Manager — receives agent telemetry, applies decoders/rules, generates alerts
 - Wazuh Indexer — stores and indexes events
 - Wazuh Dashboard — visualization, event search, MITRE views
+- Also a monitored asset in its own right — its SSH service was the target of the Kali authentication-testing scenario (see [`kali-attacker/`](../kali-attacker/README.md))
 
 ### Windows 11 Endpoint — `IMTHIAZ-WIN11`
 - Wazuh Agent v4.14.6 (Agent ID `001`) — ships telemetry to the manager
@@ -27,20 +33,33 @@ So the first phase of ThreatLens was standing up and validating the monitoring p
 ## Data flow
 
 ```
-Windows 11 (IMTHIAZ-WIN11)
-   Sysmon observes: process creation, file writes, registry changes
-        ↓
-   Wazuh Agent forwards events
-        ↓
-Ubuntu Server
-   Wazuh Manager decodes + applies detection rules
-        ↓
-   Wazuh Indexer stores events
-        ↓
-   Wazuh Dashboard surfaces alerts
-        ↓
-SOC Analyst investigates, correlates, maps to MITRE ATT&CK, documents
+Kali Linux (Attacker / Test Workstation)
+192.168.234.128
+        │
+        │ Controlled attack/test activity
+        │
+        ├───────────────────────────┬──────────────────────────────┐
+        ▼                           ▼
+Ubuntu Server                Windows 11 (IMTHIAZ-WIN11)
+192.168.234.130               Sysmon observes: process creation,
+SSH authentication attempts   file writes, registry changes
+        │                           │
+        ▼                           ▼
+Wazuh Manager decodes        Wazuh Agent forwards events
++ applies detection rules            │
+        │                           ▼
+        └──────────────┬────────────┘
+                        ▼
+              Wazuh Indexer stores events
+                        │
+                        ▼
+              Wazuh Dashboard surfaces alerts
+                        │
+                        ▼
+     SOC Analyst investigates, correlates, maps to MITRE ATT&CK, documents
 ```
+
+**Important distinction:** Kali is the source of the *activity being detected* on both hosts — it is not itself a monitored asset. Its SSH activity against the Ubuntu server **does** appear directly in Wazuh telemetry (as `srcip: 192.168.234.128` in the SSH authentication-failure events — see [`kali-attacker/`](../kali-attacker/README.md)). Its endpoint-side test activity on the Windows 11 endpoint is observed indirectly, through Sysmon/Wazuh Agent telemetry on that endpoint, which is standard for host-based detection engineering. In neither case is Kali claimed to have successfully compromised a host, and Kali is never treated as a monitored asset in this repository.
 
 ## Environment validation
 

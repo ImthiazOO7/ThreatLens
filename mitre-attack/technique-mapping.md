@@ -57,6 +57,43 @@ Adversaries add entries to Registry Run/RunOnce keys so that a program executes 
 
 ---
 
+## T1110.001 — Password Guessing
+
+**Tactic:** Credential Access
+**Detection:** Rule `5710` (built-in) — SSH non-existent-user login attempt
+
+```
+Repeated SSH authentication attempts
+       ↓
+T1110.001
+       ↓
+Password Guessing
+       ↓
+Credential Access
+```
+
+Adversaries attempt repeated authentication against a service using guessed or brute-forced credentials. In this lab, the Kali attacker/test workstation (`192.168.234.128`) generated repeated SSH login attempts against the Ubuntu server (`192.168.234.130`), which Wazuh captured as failed-authentication telemetry (Rule `5710` — non-existent user, and Rule `5503` — PAM login failure). Every observed event is a **failed** attempt; no successful authentication is present in the collected telemetry, and none is claimed. Full write-up: [`kali-attacker/attack-scenarios.md`](../kali-attacker/attack-scenarios.md#scenario-1--ssh-authentication-attack).
+
+---
+
+## T1021.004 — Remote Services: SSH
+
+**Tactic:** Lateral Movement
+
+```
+SSH used as the transport for the attempted authentication
+       ↓
+T1021.004
+       ↓
+Remote Services: SSH
+       ↓
+Lateral Movement
+```
+
+SSH is a standard remote-access protocol that adversaries abuse to move between hosts once valid credentials are obtained. This technique is mapped here because SSH was the protocol used for the credential-testing activity in this lab — it does **not** imply that lateral movement was achieved. No credentials were successfully validated, and no session was established as a result of this activity.
+
+---
+
 ## Coverage note
 
-This is a small, honest slice of the ATT&CK matrix — three techniques across three tactics — not a claim of comprehensive coverage. Expanding technique coverage (e.g. credential access, lateral movement, defense evasion) is a natural next step for the project, tracked informally as future work rather than presented as already implemented.
+This is a small, honest slice of the ATT&CK matrix — five techniques across four tactics (Execution, Discovery, Persistence, Credential Access, Lateral Movement) — not a claim of comprehensive coverage. The credential-access and lateral-movement techniques reflect **failed** authentication activity only. Expanding technique coverage further (e.g. defense evasion, collection, exfiltration) remains a natural next step for the project, tracked informally as future work rather than presented as already implemented.

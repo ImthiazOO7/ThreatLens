@@ -83,3 +83,9 @@ Suspicious context that would raise confidence:
 ## 11. Analyst Conclusion
 
 The rule reliably detects Run key modification. In this lab, the observed event (`msedge.exe` writing to a Run key) is consistent with **normal browser behavior** and is documented as **observed in a controlled lab environment** — it demonstrates the detection firing correctly, not an actual persistence incident. This is an important example of why every registry-persistence alert must be evaluated in context rather than treated as inherently malicious.
+
+## 12. Relationship to the Kali Attacker Workstation
+
+The [Kali Linux attacker/test workstation](../../kali-attacker/README.md) (`192.168.234.128`) was part of the broader controlled lab exercise this detection was validated under. However, **no Wazuh telemetry directly attributes this specific registry modification to Kali** — the collected evidence proves only what happened on the Windows endpoint itself. Per this repository's documentation standard, that causal link is therefore not claimed. The accurate relationship is documented as:
+
+> Kali served as the controlled attacker/test workstation used during the lab exercise, while the resulting persistence behavior was validated on the Windows endpoint through Wazuh telemetry.

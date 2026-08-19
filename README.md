@@ -98,34 +98,42 @@ The main objectives of ThreatLens are to:
 
 ## Lab Architecture
 
-The monitored endpoint is a Windows 11 system running the Wazuh Agent, Sysmon, and Microsoft Defender. The Wazuh monitoring stack is hosted on an Ubuntu Server.
+The monitored environment consists of a Windows 11 endpoint (Wazuh Agent, Sysmon, Microsoft Defender) and an Ubuntu Server hosting the Wazuh monitoring stack. A Kali Linux machine serves as the controlled attacker/test workstation, connecting remotely over the network to **both** the Windows 11 endpoint (encoded PowerShell, account discovery, registry persistence) and the Ubuntu Server (SSH authentication testing). Kali is not part of the monitored environment itself — it has no Wazuh Agent and generates no defensive telemetry of its own.
 
 ```text
 +-------------------------------+
-|          Windows 11           |
-|                               |
-|  +---------+  +-------------+ |
-|  | Sysmon  |  | Wazuh Agent | |
-|  +----+----+  +------+------| |
-|       |              |        |
-|       +-------+------+        |
-|               |               |
-|               v               |
-|        Endpoint Telemetry     |
+|          Kali Linux           |
+|      (Attacker / Tester)      |
+|        192.168.234.128        |
+|                                |
+|   Connects remotely over the  |
+|   network to generate         |
+|   controlled test activity    |
 +---------------+---------------+
                 |
-                v
-+-------------------------------+
-|         Ubuntu Server         |
-|                               |
-|  Wazuh Manager                |
-|  Wazuh Indexer                |
-|  Wazuh Dashboard              |
-+---------------+---------------+
-                |
-                v
-         SOC Investigation
+        +-------+-------+
+        |               |
+        v               v
++-----------------+   +-------------------------------+
+|  Ubuntu Server   |   |          Windows 11           |
+| 192.168.234.130  |   |                                |
+|                  |   |  +---------+  +-------------+ |
+|  SSH service     |   |  | Sysmon  |  | Wazuh Agent | |
+|  (auth testing)  |   |  +----+----+  +------+------| |
+|                  |   |       |              |        |
+|  Wazuh Manager    |   |       +-------+------+        |
+|  Wazuh Indexer    |   |               |               |
+|  Wazuh Dashboard  |   |               v               |
++--------+----------+   |        Endpoint Telemetry     |
+         |               +---------------+---------------+
+         |                               |
+         +---------------+---------------+
+                         |
+                         v
+                  SOC Investigation
 ```
+
+Kali's SSH activity against the Ubuntu server **does** appear directly in Wazuh telemetry (`srcip: 192.168.234.128` on the resulting authentication-failure alerts). Its endpoint-side test activity on Windows 11 is observed indirectly, through Sysmon/Wazuh Agent telemetry, which is standard for host-based detection engineering. In neither case is Kali treated as a monitored asset, and no successful compromise is claimed anywhere in this repository. Full detail: [`kali-attacker/`](kali-attacker/README.md).
 
 The architecture documentation and diagrams are available in:
 
@@ -139,6 +147,7 @@ The architecture documentation and diagrams are available in:
 
 | Technology | Purpose |
 |---|---|
+| Kali Linux | Attacker/test machine — source of the controlled activity used to exercise detections |
 | Wazuh | Centralized security monitoring, detection, alerting, and investigation |
 | Wazuh Agent | Endpoint telemetry collection and forwarding |
 | Wazuh Manager | Event processing and rule evaluation |
@@ -532,6 +541,13 @@ ThreatLens/
 │   ├── README.md
 │   ├── hunting-methodology.md         ← Hypothesis → search → pivot → validate
 │   └── hypotheses.md
+│
+├── kali-attacker/
+│   ├── README.md                      ← Kali's role, network identity, scope & honesty notes
+│   ├── attack-scenarios.md            ← SSH brute-force + persistence-testing scenarios
+│   └── evidence/
+│       ├── ssh-bruteforce-alert.png
+│       └── ssh-bruteforce-event-details.png
 │
 ├── mitre-attack/
 │   ├── attack-matrix.md               ← All techniques used, in one table
